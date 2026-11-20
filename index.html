@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gastos Fiscales · Ciudad de México</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,300;0,400;0,500;0,700;0,900;1,400&amp;display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+  const CONFIG = {
+    SHEET_ID: '1neI59ibTy5Azr5XGLASF0JenCAKvL4wKPuIwBG3-7gg',
+    SHEET_NAME: '01_BASE_GASTOS'
+  };
+</script>
+<style>
+  :root{
+    --guinda:#9D2148;
+    --guinda-dark:#7A1938;
+    --dorado:#B28E5C;
+    --dorado-dark:#8F7147;
+    --gris:#55585A;
+    --azul:#3D6C87;
+    --crema:#FFFAE9;
+    --grisclaro:#BFB7AF;
+    --bg:#F7F6F3;
+    --card:#FFFFFF;
+    --border:#E6E1D8;
+    --pos:#5B7A4E;
+    --neg:#A6433C;
+    --font: 'Roboto', Arial, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--gris);font-family:var(--font);font-weight:400;line-height:1.45;}
+  header{background:#fff;color:var(--guinda);padding:20px 32px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;border-bottom:4px solid var(--dorado);}
+  header .brand{display:flex;flex-direction:column;}
+  header h1{font-size:1.4rem;margin:0;font-weight:700;letter-spacing:.2px;}
+  header .period{font-size:.83rem;color:var(--dorado);margin-top:6px;font-weight:700;}
+  header .logo{display:block;width:303px;max-width:100%;height:auto;background:#fff;padding:8px 12px;border-radius:8px;}
+  header .meta{text-align:right;font-size:.8rem;color:#F0D9C8;font-weight:300;}
+  header .meta b{color:#fff;font-weight:700;}
+
+  nav{background:var(--guinda-dark);display:flex;gap:2px;padding:0 24px;overflow-x:auto;}
+  nav button{background:transparent;border:none;color:#FFFAE9;padding:13px 20px;font-size:.88rem;cursor:pointer;border-bottom:3px solid transparent;font-family:var(--font);white-space:nowrap;font-weight:500;}
+  nav button.active{color:#fff;border-bottom-color:var(--dorado);font-weight:700;}
+  nav button:hover{color:#fff;}
+
+  main{max-width:1300px;margin:0 auto;padding:26px 24px 60px;}
+  .view{display:none;}
+  .view.active{display:block;animation:fade .2s ease;}
+  @keyframes fade{from{opacity:0}to{opacity:1}}
+
+  .filterbar{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 18px;margin-bottom:18px;
+    display:flex;gap:18px;flex-wrap:wrap;align-items:flex-end;border-top:3px solid var(--guinda);}
+  .fb-group{display:flex;flex-direction:column;gap:4px;min-width:130px;}
+  .fb-group label{font-size:.68rem;text-transform:uppercase;letter-spacing:.05em;color:var(--dorado-dark);font-weight:700;}
+  .fb-note{font-size:.72rem;color:var(--neg);flex-basis:100%;}
+
+  select, input[type=text]{padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:.83rem;font-family:var(--font);background:#fff;color:var(--gris);}
+
+  .toolbar{display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap;}
+
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-bottom:18px;}
+  .kpi{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px 18px;border-top:3px solid var(--dorado);text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+  .kpi .label{font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;color:var(--grisclaro);margin-bottom:6px;font-weight:500;}
+  .kpi .value{font-size:1.55rem;font-weight:700;color:var(--gris);}
+  .kpi .delta{font-size:.76rem;margin-top:4px;color:var(--grisclaro);}
+  .kpi .delta.pos{color:var(--pos);font-weight:500;}
+  .kpi .delta.neg{color:var(--neg);font-weight:500;}
+
+  .grid2{display:grid;grid-template-columns:1.4fr 1fr;gap:16px;margin-bottom:16px;}
+  .grid3{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}
+  @media(max-width:850px){.grid2,.grid3{grid-template-columns:1fr;}}
+
+  .card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:18px;}
+  .card h3{margin:0 0 3px 0;font-size:1rem;color:var(--gris);font-weight:700;}
+  .card .cap{font-size:.74rem;color:var(--grisclaro);margin-bottom:12px;}
+
+  table{width:100%;border-collapse:collapse;font-size:.82rem;}
+  th{text-align:left;color:var(--gris);font-weight:500;font-size:.7rem;text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border);padding:7px 8px;}
+  td{padding:7px 8px;border-bottom:1px solid #F1EEE7;}
+  tr:hover td{background:var(--crema);}
+  .barcell{position:relative;display:inline-block;width:64px;height:19px;background:#F1EEE7;border-radius:3px;overflow:hidden;vertical-align:middle;}
+  .barcell .fill{position:absolute;left:0;top:0;bottom:0;width:var(--pct,0%);background:var(--dorado);}
+  .barcell .txt{position:relative;z-index:1;font-size:.72rem;color:var(--gris);font-weight:700;display:flex;align-items:center;justify-content:center;height:100%;}
+  .napct{color:var(--grisclaro);font-style:italic;font-size:.78rem;}
+
+  .tag{display:inline-block;padding:2px 9px;border-radius:10px;font-size:.68rem;font-weight:700;letter-spacing:.02em;}
+  .tag.sub{background:#EFE3D3;color:var(--dorado-dark);}
+  .tag.red{background:#DCE7D6;color:#3E5A32;}
+  .tag.con{background:#F3D9E1;color:var(--guinda-dark);}
+  .tag.exe{background:#E3DCEC;color:#5A4A7A;}
+
+  .alert{padding:10px 12px;border-left:3px solid var(--dorado);background:var(--crema);margin-bottom:8px;border-radius:0 6px 6px 0;font-size:.85rem;}
+  .alert.up{border-color:var(--pos);background:#EEF3EC;}
+  .alert.down{border-color:var(--neg);background:#F7ECEA;}
+  .alert.info{border-color:var(--guinda);background:#F7ECEF;}
+  .alert b{color:var(--guinda);}
+
+  .footnote{font-size:.72rem;color:var(--grisclaro);margin-top:10px;}
+  .footnote sup{color:var(--dorado-dark);}
+  sup.ref{font-size:.7em;color:var(--dorado-dark);font-weight:700;}
+
+  footer{text-align:center;padding:24px;color:var(--grisclaro);font-size:.75rem;}
+  .note{font-size:.75rem;color:var(--grisclaro);margin-top:10px;font-style:italic;}
+  .state-msg{padding:60px 20px;text-align:center;color:var(--grisclaro);}
+  .state-msg.error{color:var(--neg);}
+  :focus-visible{outline:3px solid var(--dorado);outline-offset:3px;}
+  button,select,input,.section-index a{transition:background-color .2s ease,border-color .2s ease,color .2s ease,box-shadow .2s ease;}
+  .section-heading{margin:26px 0 14px;padding:0 2px;scroll-margin-top:16px;}
+  .section-heading h2{margin:0;color:var(--gris);font-size:1.2rem;letter-spacing:-.01em;}
+  .section-heading p{margin:4px 0 0;color:var(--gris);font-size:.82rem;}
+  .section-heading:first-child{margin-top:0;}
+  .section-divider{border:0;border-top:1px solid var(--border);margin:30px 0 0;}
+  .section-index{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 18px;}
+  .section-index a{color:var(--guinda-dark);text-decoration:none;font-size:.78rem;font-weight:500;background:#fff;border:1px solid var(--border);border-radius:999px;padding:7px 12px;}
+  .section-index a:hover{border-color:var(--dorado);background:var(--crema);}
+  .data-note{background:var(--crema);border-left:3px solid var(--dorado);border-radius:0 7px 7px 0;padding:9px 12px;font-size:.8rem;margin:0 0 16px;}
+  .data-note:empty{display:none;}
+  .kpi .label,.kpi .delta,.card .cap,.footnote,.note{color:#686A6B;}
+  .kpi,.card,.filterbar{box-shadow:0 3px 18px rgba(65,50,45,.035);}
+  .kpi,.card{border-radius:12px;}
+  .table-scroll{overflow-x:auto;}
+  .table-scroll table{min-width:690px;}
+  .pagination{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-top:16px;font-size:.8rem;}
+  .pagination .controls{display:flex;gap:8px;align-items:center;}
+  .pagination button{background:#fff;border:1px solid var(--border);border-radius:7px;padding:7px 11px;color:var(--guinda);font-family:var(--font);cursor:pointer;}
+  .pagination button:disabled{opacity:.45;cursor:default;}
+  .detail-muted{color:#686A6B;font-size:.76rem;}
+  .multi-select{position:relative;min-width:190px;}
+  .multi-select summary{list-style:none;cursor:pointer;padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:#fff;font-size:.83rem;min-height:36px;}
+  .multi-select summary::-webkit-details-marker{display:none;}
+  .multi-select summary:after{content:"⌄";float:right;margin-left:12px;}
+  .multi-options{position:absolute;z-index:10;top:calc(100% + 4px);left:0;width:min(320px,85vw);max-height:290px;overflow:auto;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:0 12px 28px rgba(40,30,30,.15);padding:8px;}
+  .multi-options label{display:flex;align-items:center;gap:8px;padding:6px 8px;font-size:.8rem;text-transform:none;letter-spacing:normal;font-weight:400;color:var(--gris);cursor:pointer;}
+  .multi-options label[hidden]{display:none;}
+  .multi-options label:hover{background:var(--crema);}
+  .multi-clear{width:100%;border:0;background:var(--crema);color:var(--guinda-dark);padding:7px;cursor:pointer;font:500 .8rem var(--font);border-radius:5px;}
+  .chart-donut{max-width:448px;margin:0 auto;}
+  .chart-scroll{overflow-x:auto;}
+  .chart-scroll-inner{min-width:900px;}
+  .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;}
+  @media(max-width:650px){header{padding:18px 20px;}header .logo{width:254px;}nav{padding:0 12px;}main{padding:18px 14px 50px;}.filterbar{gap:12px;}.fb-group{flex:1 1 145px;}.fb-group select{width:100%;}.card{padding:15px;}}
+  @media(prefers-reduced-motion:reduce){.view.active{animation:none;}*{scroll-behavior:auto!important;transition:none!important;}}
+
+  :root{--bg:#F5F4F1;--border:#E9E4DD;--ink:#383A3B;--soft:#706D69;--shadow:0 12px 34px rgba(64,47,46,.055);}
+  html{scroll-behavior:smooth;}
+  body{background:radial-gradient(circle at 92% 1%,#F4EDE7 0,transparent 28%),var(--bg);color:var(--ink);}
+  header{min-height:126px;padding:24px max(28px,calc((100vw - 1360px)/2));border-bottom:1px solid var(--border);box-shadow:0 1px 12px rgba(74,48,47,.025);gap:28px;}
+  header .brand{gap:2px;max-width:780px;}
+  header h1{font-size:clamp(1.36rem,2vw,1.9rem);line-height:1.18;letter-spacing:-.035em;color:var(--guinda);}
+  header .period{align-self:flex-start;margin-top:9px;padding:6px 11px;border-radius:999px;background:#F9F2E9;color:var(--dorado-dark);font-size:.78rem;letter-spacing:.01em;}
+  header .logo{width:303px;padding:0;background:transparent;border-radius:0;flex-shrink:0;}
+  nav{display:flex;justify-content:center;gap:7px;background:transparent;padding:14px 24px 0;overflow-x:auto;}
+  nav button{padding:9px 22px;border:1px solid transparent;border-radius:999px;color:var(--gris);background:transparent;font-size:.83rem;font-weight:700;transition:background-color .25s ease,color .25s ease,transform .25s ease,box-shadow .25s ease;}
+  nav button:hover{color:var(--guinda);background:#FFF9F8;transform:translateY(-1px);}
+  nav button.active{background:var(--guinda);color:#fff;border-color:var(--guinda);box-shadow:0 7px 16px rgba(157,33,72,.18);}
+  main{max-width:1408px;padding:22px 28px 72px;}
+  .view.active{animation:page-in .38s ease both;}
+  @keyframes page-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+  .filterbar{position:relative;z-index:5;gap:12px 18px;align-items:flex-end;padding:19px 22px;margin-bottom:22px;border:1px solid var(--border);border-top:1px solid var(--border);border-radius:18px;background:#fff;box-shadow:var(--shadow);}
+  .fb-group{min-width:145px;flex:1 1 150px;gap:7px;}
+  .fb-group label{font-size:.66rem;letter-spacing:.075em;color:var(--dorado-dark);}
+  .filterbar .multi-options label{font-size:.81rem;line-height:1.35;text-transform:none;letter-spacing:normal;color:var(--ink);font-weight:400;}
+  .fb-group select,.multi-select summary{min-height:40px;padding:9px 12px;border:1px solid #E4DED6;border-radius:10px;background:#FBFAF8;color:var(--ink);font-size:.82rem;}
+  .fb-group select:hover,.multi-select summary:hover{border-color:#C8A88A;background:#fff;}
+  .multi-select{min-width:170px;}
+  .multi-options{border-radius:12px;box-shadow:0 18px 40px rgba(64,47,46,.16);}
+  .section-index{margin:3px 0 28px;gap:9px;}
+  .section-index{scrollbar-width:none;}
+  .section-index::-webkit-scrollbar{display:none;}
+  .section-index a{padding:7px 13px;border-radius:999px;color:var(--guinda-dark);border:1px solid #E5D8D2;background:#FFFDFC;font-size:.75rem;box-shadow:0 2px 8px rgba(64,47,46,.025);}
+  .section-index a:hover{border-color:var(--guinda);background:#F8EDF1;}
+  .section-heading{margin:34px 0 16px;padding-left:2px;}
+  .section-heading h2{color:var(--guinda-dark);font-size:clamp(1.28rem,1.55vw,1.55rem);font-weight:700;letter-spacing:-.035em;}
+  .section-heading p{font-size:.82rem;color:var(--soft);margin-top:5px;}
+  .section-divider{margin-top:34px;border-color:#DED8D1;}
+  .kpis{grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:18px;}
+  .kpi{position:relative;min-height:146px;padding:21px 22px;border:1px solid var(--border);border-radius:18px;background:#fff;box-shadow:var(--shadow);overflow:hidden;transition:transform .25s ease,box-shadow .25s ease;}
+  .kpi:hover,.card:hover{transform:translateY(-2px);box-shadow:0 18px 40px rgba(64,47,46,.085);}
+  .kpi:first-child{grid-column:auto;}
+  .kpi:first-child{background:linear-gradient(125deg,#7A1938 0%,#9D2148 74%,#AE3D60 100%);border-color:transparent;box-shadow:0 16px 34px rgba(122,25,56,.18);}
+  .kpi:first-child::after{content:"";position:absolute;right:-65px;top:-105px;width:245px;height:245px;border:1px solid rgba(255,255,255,.16);border-radius:50%;box-shadow:0 0 0 45px rgba(255,255,255,.035),0 0 0 100px rgba(255,255,255,.025);pointer-events:none;}
+  .kpi.contribuyentes{background:linear-gradient(135deg,#FFFDF8,#F6EBDC);border-color:#EAD9BC;}
+  .kpi .label{z-index:1;margin-bottom:10px;color:#6C6967;font-size:.68rem;font-weight:700;letter-spacing:.075em;}
+  .kpi .value{z-index:1;color:var(--ink);font-size:clamp(1.38rem,2.25vw,2.05rem);line-height:1.12;letter-spacing:-.035em;font-variant-numeric:tabular-nums;}
+  .kpi .delta{z-index:1;margin-top:9px;color:#6C6967;font-size:.76rem;}
+  .kpi:first-child .label,.kpi:first-child .value,.kpi:first-child .delta{color:#fff;}
+  .kpi.contribuyentes .value{color:var(--guinda-dark);}
+  .summary-panels{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,.8fr);gap:16px;align-items:stretch;}
+  .summary-panels>.card{min-width:0;}
+  .card{min-width:0;padding:22px 24px;border:1px solid var(--border);border-radius:18px;background:#fff;box-shadow:var(--shadow);transition:transform .25s ease,box-shadow .25s ease;}
+  .card h3{margin-bottom:4px;color:var(--ink);font-size:1.02rem;letter-spacing:-.02em;}
+  .card .cap{margin-bottom:17px;color:var(--soft);font-size:.76rem;}
+  .comparison-kpi{display:inline-flex;align-items:center;justify-content:space-between;gap:18px;max-width:100%;margin-top:16px;padding:11px 15px;border:1px solid #EAD9BC;border-radius:12px;background:linear-gradient(135deg,#FFFDF8,#F8F0E3);}
+  .comparison-kpi .label{color:var(--soft);font-size:.74rem;font-weight:500;}
+  .comparison-kpi .value{color:var(--guinda-dark);font-size:1.18rem;font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums;}
+  .comparison-kpi .value.pos{color:var(--pos);}
+  .comparison-kpi .value.neg{color:var(--neg);}
+  .summary-panels .table-scroll table{min-width:0;width:100%;font-size:.76rem;}
+  .summary-panels th,.summary-panels td{padding:10px 6px;}
+  .grid2{grid-template-columns:minmax(0,1.18fr) minmax(0,.82fr);gap:16px;}
+  .grid3{gap:16px;}
+  table{font-size:.8rem;}
+  th{padding:11px 9px;color:#77716C;background:#FAF8F5;border-bottom:1px solid var(--border);font-size:.66rem;}
+  th:first-child{border-radius:8px 0 0 8px;}
+  th:last-child{border-radius:0 8px 8px 0;}
+  td{padding:11px 9px;border-bottom:1px solid #F1EDE8;}
+  tr:hover td{background:#F9F5F1;}
+  .barcell{background:#F0EAE3;border-radius:5px;}
+  .barcell .fill{background:var(--dorado);}
+  .footnote,.note{color:var(--soft);line-height:1.5;}
+  .pagination button{border-radius:9px;transition:background-color .2s ease,color .2s ease;}
+  .pagination button:not(:disabled):hover{background:var(--guinda);color:#fff;}
+  footer{border-top:1px solid var(--border);padding:28px 16px 36px;color:#77716C;line-height:1.75;letter-spacing:.035em;}
+  @media(max-width:1120px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr));}.summary-panels{grid-template-columns:1fr;}}
+  @media(max-width:850px){.grid2,.grid3{grid-template-columns:1fr;}nav{justify-content:flex-start;}}
+  @media(max-width:680px){header{min-height:0;padding:22px 18px;gap:18px;}header h1{font-size:1.42rem;}header .logo{width:244px;}nav{padding:12px 16px 0;}main{padding:18px 16px 54px;}.filterbar{padding:16px;gap:12px;}.fb-group{flex:1 1 138px;min-width:0;}.kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:11px;}.kpi{min-height:128px;padding:16px 13px;}.kpi .value{font-size:1.45rem;}.card{padding:18px 16px;}.summary-panels .table-scroll table{min-width:440px;}.section-index{overflow-x:auto;flex-wrap:nowrap;padding-bottom:5px;}.section-index a{white-space:nowrap;}.multi-options{left:auto;right:0;}}
+  @media(max-width:390px){.kpis{grid-template-columns:1fr;}.kpi{min-height:116px;}}
+  @media(max-width:390px){.comparison-kpi{display:flex;width:100%;}}
+  @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto;}.view.active{animation:none;}.kpi,.card,nav button{transition:none;}.kpi:hover,.card:hover,nav button:hover{transform:none;}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <h1>GASTOS FISCALES DE LA CIUDAD DE MÉXICO</h1>
+    <div class="period" id="headerMeta">Cargando periodo…</div>
+  </div>
+  <img class="logo" src="https://dgtc.finanzas.cdmx.gob.mx/user/images/g5_helium/LOGO%20SAF.svg" alt="Secretaría de Administración y Finanzas de la Ciudad de México">
+</header>
+
+<nav id="nav" aria-label="Secciones principales"></nav>
+
+<main id="main">
+  <div class="state-msg" id="loadingMsg">Cargando información de la base…</div>
+</main>
+
+<footer>SECRETARÍA DE ADMINISTRACIÓN Y FINANZAS DE LA CIUDAD DE MÉXICO<br>TESORERÍA–SUBTESORERÍA DE POLÍTICA FISCAL</footer>
+
+<script>
+const COL = {ID:0, EJERCICIO:1, MES_NUM:2, MES:3, TIPO:4, CONCEPTO:5, ARTICULO:6, RANGO:7, AMBITO:8, BENEF:9, MONTO:10, CONTRIB:11};
+const MIN_COLUMNS = 12;
+
+function finiteNumber(value){
+  if(value === null || value === undefined || value === '') return null;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+}
+function escapeHtml(value){
+  return String(value ?? '').replace(/[&<>"']/g, char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+}
+
+async function fetchSheetRows(sheetId, sheetName){
+  const url = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetName)}`;
+  const res = await fetch(url);
+  if(!res.ok) throw new Error('No se pudo leer la hoja (revisa que esté compartida como "Cualquier persona con el enlace - Lector").');
+  const text = await res.text();
+  const jsonStart = text.indexOf('{');
+  const jsonEnd = text.lastIndexOf('}');
+  if(jsonStart<0 || jsonEnd<=jsonStart) throw new Error('La hoja devolvió un formato de respuesta inesperado.');
+  const json = JSON.parse(text.substring(jsonStart, jsonEnd+1));
+  if(json.status !== 'ok' || !json.table || !Array.isArray(json.table.rows))
+    throw new Error('Google Sheets no devolvió una tabla válida. Revisa el acceso y el nombre de la pestaña.');
+  if((json.table.cols || []).length < MIN_COLUMNS)
+    throw new Error('La hoja necesita las once columnas originales y la columna final de contribuyentes.');
+  if([COL.EJERCICIO,COL.MES_NUM,COL.BENEF,COL.MONTO,COL.CONTRIB].some(i=>json.table.cols[i].type!=='number'))
+    throw new Error('Las columnas de ejercicio, mes, beneficiarios, monto y contribuyentes deben ser numéricas.');
+  const rawRows = json.table.rows;
+  const data = [];
+  let rejected = 0;
+  rawRows.forEach(r=>{
+    const c = r.c || [];
+    const get = (i)=> c[i] ? c[i].v : null;
+    const ejercicio = finiteNumber(get(COL.EJERCICIO));
+    const mesNum = finiteNumber(get(COL.MES_NUM));
+    const tipo = get(COL.TIPO);
+    const concepto = get(COL.CONCEPTO);
+    const monto = finiteNumber(get(COL.MONTO));
+    const beneficiarios = finiteNumber(get(COL.BENEF));
+    const contribuyentes = finiteNumber(get(COL.CONTRIB));
+    if(!Number.isInteger(ejercicio) || !Number.isInteger(mesNum) || mesNum<1 || mesNum>12 ||
+       !String(tipo ?? '').trim() || !String(concepto ?? '').trim() ||
+       (get(COL.MONTO) !== null && monto === null) ||
+       (get(COL.BENEF) !== null && beneficiarios === null) ||
+       (get(COL.CONTRIB) !== null && contribuyentes === null)){
+      rejected++;
+      return;
+    }
+    data.push({
+      id: get(COL.ID),
+      ejercicio,
+      mes_num: mesNum,
+      mes: get(COL.MES),
+      tipo: String(tipo).trim(),
+      concepto: String(concepto).trim(),
+      articulo: get(COL.ARTICULO),
+      rango: get(COL.RANGO),
+      ambito: get(COL.AMBITO),
+      beneficiarios,
+      contribuyentes,
+      monto
+    });
+  });
+  if(rejected) console.warn(`[Calidad] ${rejected} filas omitidas por datos estructurales inválidos.`);
+  return data;
+}
+
+const MES_NOMBRE = ['','Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+const MES_NOMBRE_LARGO = ['','Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const COLOR_TIPO = {Subsidios:'#B28E5C', Reducciones:'#5B7A4E', Condonaciones:'#9D2148', Exenciones:'#6B5A8C', Disminuciones:'#55585A'};
+const TAG_CLASS = {Subsidios:'sub', Reducciones:'red', Condonaciones:'con', Exenciones:'exe', Disminuciones:'exe'};
+const CONTRIBUCION_CATEGORIES = ['Predial','Tenencia','Nóminas','Multas de tránsito','ISAI','Resto de derechos','Suministro de agua','Espectáculos','Loterías'];
+const CONTRIBUCION_BY_CONCEPTO = new Map([
+  ['predial','Predial'],['predial (pago anticipado)','Predial'],['predial pago anticipado','Predial'],
+  ['tenencia','Tenencia'],['nomina','Nóminas'],['nominas','Nóminas'],
+  ['multas de transito','Multas de tránsito'],['isai','ISAI'],
+  ['derechos r.p.p.','Resto de derechos'],['otros derechos','Resto de derechos'],
+  ['derechos del archivo general de notarias','Resto de derechos'],
+  ['derechos por permiso de filmacion en via publica','Resto de derechos'],
+  ['otras contribuciones','Resto de derechos'],['resto de derechos','Resto de derechos'],
+  ['suministro de agua','Suministro de agua'],['espectaculos','Espectáculos'],
+  ['loterias, rifas, sorteos y concursos','Loterías']
+]);
+
+function categoriaContribucion(concepto){
+  const normalized=String(concepto||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase().replace(/\s+/g,' ');
+  return CONTRIBUCION_BY_CONCEPTO.get(normalized)||null;
+}
+
+function agruparContribuciones(rows){
+  const amounts=new Map();
+  const unclassified=new Set();
+  rows.filter(row=>row.monto!==null).forEach(row=>{
+    const category=categoriaContribucion(row.concepto);
+    if(category) amounts.set(category,(amounts.get(category)||0)+row.monto);
+    else unclassified.add(row.concepto);
+  });
+  return {amounts, unclassified:[...unclassified].sort()};
+}
+
+let DATA = [];
+let FILTERS = { year:null, periodo:'anual', mesIni:1, mesFin:12, tipo:'', conceptos:[] };
+let YEAR_CUTOFF = new Map();
+let resumenChart = null;
+let analysisCharts = {evol:null, acum:null, vs:null, tipo:null, concepto:null};
+const PAGE_SIZE = 50;
+
+(async function init(){
+  try{
+    DATA = await fetchSheetRows(CONFIG.SHEET_ID, CONFIG.SHEET_NAME);
+    if(DATA.length === 0){
+      showError('La hoja se leyó correctamente pero no se encontraron filas con datos.');
+      return;
+    }
+    const montoSinCaptura = DATA.filter(d=>d.monto===null).length;
+    console.log(`[Calidad] Registros: ${DATA.length} · Monto sin captura: ${montoSinCaptura} · Monto reportado en cero: ${DATA.filter(d=>d.monto===0).length}`);
+
+    const years = [...new Set(DATA.map(d=>d.ejercicio))].sort((a,b)=>a-b);
+    years.forEach(year=>{
+      const months = DATA.filter(d=>d.ejercicio===year && d.monto!==null).map(d=>d.mes_num);
+      YEAR_CUTOFF.set(year, months.length ? Math.max(...months) : 0);
+    });
+    FILTERS.year = years[years.length-1];
+    if(!window.Chart) throw new Error('No se pudo cargar Chart.js. Comprueba la conexión a internet e intenta nuevamente.');
+    Chart.defaults.animation.duration = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 520;
+    Chart.defaults.animation.easing = 'easeOutQuart';
+    Chart.defaults.plugins.tooltip.callbacks.label = ctx=>{
+      const parsed=ctx.parsed;
+      const value=typeof parsed==='number' ? parsed : (ctx.chart.options.indexAxis==='y' ? parsed.x : parsed.y);
+      return `${ctx.dataset.label ? ctx.dataset.label+': ' : ''}${fmt(value,1)} mdp`;
+    };
+    if(Chart.defaults.scales?.linear?.ticks) Chart.defaults.scales.linear.ticks.callback=value=>fmt(value,1);
+    buildDashboard(years);
+  }catch(err){
+    showError(err.message || 'Ocurrió un error al leer la hoja de cálculo.');
+  }
+})();
+
+function showError(msg){
+  const main = document.getElementById('main');
+  main.innerHTML = '<div class="state-msg error"><strong>No se pudo cargar el dashboard.</strong><br><br><span id="errorDetail"></span></div>';
+  document.getElementById('errorDetail').textContent = msg;
+  document.getElementById('headerMeta').textContent = 'Sin conexión a datos';
+}
+
+function fmt(n, dec=1){ return (n||0).toLocaleString('es-MX',{minimumFractionDigits:dec, maximumFractionDigits:dec}); }
+function fmtInt(n){ return Math.round(n||0).toLocaleString('es-MX'); }
+function tagFor(tipo){ return `<span class="tag ${Object.hasOwn(TAG_CLASS,tipo)?TAG_CLASS[tipo]:''}">${escapeHtml(tipo)}</span>`; }
+
+function buildDashboard(years){
+  const periodsWithData = [...new Set(DATA.filter(d=>d.monto!==null).map(d=>`${d.ejercicio}-${String(d.mes_num).padStart(2,'0')}`))].sort();
+  if(!periodsWithData.length) throw new Error('La base no contiene ningún periodo con montos o beneficiarios capturados.');
+  const lastPeriod = periodsWithData[periodsWithData.length-1];
+  const [lastYear, lastMonthStr] = lastPeriod.split('-');
+  document.getElementById('headerMeta').textContent = `Última actualización: ${MES_NOMBRE_LARGO[parseInt(lastMonthStr)]} ${lastYear}`;
+
+  const navViews = [['v-panorama','Panorama'], ['v-detalle','Detalle']];
+  const nav = document.getElementById('nav');
+  nav.innerHTML = '';
+  navViews.forEach(([id,label])=>{
+    const b = document.createElement('button');
+    b.textContent = label;
+    b.dataset.target = id;
+    b.onclick = ()=>{
+      document.querySelectorAll('nav button').forEach(x=>x.classList.remove('active'));
+      document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
+      b.classList.add('active');
+      b.setAttribute('aria-current','page');
+      nav.querySelectorAll('button').forEach(x=>{ if(x!==b) x.removeAttribute('aria-current'); });
+      document.getElementById(id).classList.add('active');
+      document.getElementById('filterbar').style.display = 'flex';
+      window.scrollTo({top:0,behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
+    };
+    nav.appendChild(b);
+  });
+
+  const main = document.getElementById('main');
+  main.innerHTML = `
+    <div class="filterbar" id="filterbar"></div>
+    <div class="view" id="v-panorama">
+      <div class="section-index" aria-label="Índice del panorama">
+        <a href="#v-resumen">Resumen</a>
+        <a href="#sub-distribucion">Distribución</a>
+        <a href="#sub-evolucion">Evolución</a>
+        <a href="#sub-tops">Tops</a>
+      </div>
+      <section id="v-resumen" aria-labelledby="headingResumen">
+        <div id="resumen-indicadores"></div>
+        <section id="sub-distribucion" aria-labelledby="headingDistribucion"></section>
+      </section>
+      <hr class="section-divider">
+      <section id="v-analisis">
+        <section id="sub-evolucion" aria-labelledby="headingEvolucion"></section>
+        <section id="sub-tops" aria-labelledby="headingTops"></section>
+      </section>
+    </div>
+    <section class="view" id="v-detalle"></section>
+  `;
+
+  renderFilterBar(years);
+  nav.querySelector('button').click();
+  refreshFilteredViews();
+}
+
+function renderFilterBar(years){
+  const tipos = [...new Set(DATA.map(d=>d.tipo))].sort();
+  const conceptos = [...new Set(DATA.map(d=>d.concepto))].sort();
+  const fb = document.getElementById('filterbar');
+  fb.innerHTML = `
+    <div class="fb-group">
+      <label for="gfYear">Ejercicio</label>
+      <select id="gfYear">${years.map(y=>`<option value="${y}" ${y===FILTERS.year?'selected':''}>${y}</option>`).join('')}</select>
+    </div>
+    <div class="fb-group">
+      <label for="gfPeriodo">Periodo</label>
+      <select id="gfPeriodo">
+        <option value="anual">Anual</option>
+        <option value="mensual">Mensual</option>
+        <option value="rango">Rango de meses</option>
+      </select>
+    </div>
+    <div class="fb-group" id="fbMesIniWrap">
+      <label for="gfMesIni" id="lblMesIni">Mes inicial</label>
+      <select id="gfMesIni">${MES_NOMBRE_LARGO.slice(1).map((m,i)=>`<option value="${i+1}">${m}</option>`).join('')}</select>
+    </div>
+    <div class="fb-group" id="fbMesFinWrap">
+      <label for="gfMesFin">Mes final</label>
+      <select id="gfMesFin">${MES_NOMBRE_LARGO.slice(1).map((m,i)=>`<option value="${i+1}">${m}</option>`).join('')}</select>
+    </div>
+    <div class="fb-group">
+      <label for="gfTipo">Tipo de beneficio</label>
+      <select id="gfTipo"><option value="">Todos</option>${tipos.map(t=>`<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join('')}</select>
+    </div>
+    <div class="fb-group">
+      <label id="conceptLabel">Concepto</label>
+      <details class="multi-select" id="gfConcepto" aria-labelledby="conceptLabel">
+        <summary id="conceptSummary">Todos los conceptos</summary>
+        <div class="multi-options">
+          <button class="multi-clear" id="clearConceptos" type="button">Todos los conceptos</button>
+          ${conceptos.map(c=>`<label><input class="concept-option" type="checkbox" value="${escapeHtml(c)}"> <span>${escapeHtml(c)}</span></label>`).join('')}
+        </div>
+      </details>
+    </div>
+    <div class="fb-note" id="fbNote" role="status"></div>
+  `;
+  document.getElementById('gfMesFin').value = 12;
+  applyPeriodoVisibility();
+
+  document.getElementById('gfYear').addEventListener('change', e=>{ FILTERS.year=parseInt(e.target.value); refreshFilteredViews(); });
+  document.getElementById('gfPeriodo').addEventListener('change', e=>{
+    FILTERS.periodo = e.target.value;
+    if(FILTERS.periodo==='anual'){ FILTERS.mesIni=1; FILTERS.mesFin=12; }
+    if(FILTERS.periodo==='mensual'){ FILTERS.mesFin = FILTERS.mesIni; document.getElementById('gfMesFin').value = FILTERS.mesIni; }
+    applyPeriodoVisibility();
+    refreshFilteredViews();
+  });
+  document.getElementById('gfMesIni').addEventListener('change', e=>{
+    FILTERS.mesIni = parseInt(e.target.value);
+    if(FILTERS.periodo==='mensual'){ FILTERS.mesFin = FILTERS.mesIni; document.getElementById('gfMesFin').value = FILTERS.mesIni; }
+    if(FILTERS.mesFin < FILTERS.mesIni){ FILTERS.mesFin = FILTERS.mesIni; document.getElementById('gfMesFin').value = FILTERS.mesIni; document.getElementById('fbNote').textContent = 'El mes final se ajustó al mes inicial.'; }
+    refreshFilteredViews();
+  });
+  document.getElementById('gfMesFin').addEventListener('change', e=>{
+    let v = parseInt(e.target.value);
+    if(v < FILTERS.mesIni){
+      document.getElementById('fbNote').textContent = 'El mes final no puede ser anterior al mes inicial — se ajustó automáticamente.';
+      v = FILTERS.mesIni;
+      e.target.value = v;
+    } else {
+      document.getElementById('fbNote').textContent = '';
+    }
+    FILTERS.mesFin = v;
+    refreshFilteredViews();
+  });
+  document.getElementById('gfTipo').addEventListener('change', e=>{
+    FILTERS.tipo=e.target.value;
+    syncConceptOptions();
+    refreshFilteredViews();
+  });
+  document.querySelectorAll('.concept-option').forEach(input=>input.addEventListener('change',()=>{
+    FILTERS.conceptos=[...document.querySelectorAll('.concept-option:checked')].map(input=>input.value);
+    updateConceptSummary();
+    refreshFilteredViews();
+  }));
+  document.getElementById('clearConceptos').addEventListener('click',()=>{
+    FILTERS.conceptos=[];
+    document.querySelectorAll('.concept-option').forEach(input=>{input.checked=false;});
+    updateConceptSummary();
+    refreshFilteredViews();
+  });
+  document.addEventListener('click',event=>{
+    const selector=document.getElementById('gfConcepto');
+    if(selector?.open && !selector.contains(event.target)) selector.open=false;
+  });
+  syncConceptOptions();
+}
+
+function updateConceptSummary(){
+  const count=FILTERS.conceptos.length;
+  document.getElementById('conceptSummary').textContent = count===0 ? 'Todos los conceptos' : count===1 ? FILTERS.conceptos[0] : `${count} conceptos seleccionados`;
+}
+
+function syncConceptOptions(){
+  const valid=new Set(DATA.filter(d=>!FILTERS.tipo || d.tipo===FILTERS.tipo).map(d=>d.concepto));
+  FILTERS.conceptos=FILTERS.conceptos.filter(concepto=>valid.has(concepto));
+  document.querySelectorAll('.concept-option').forEach(input=>{
+    input.disabled=!valid.has(input.value);
+    input.checked=FILTERS.conceptos.includes(input.value);
+    input.closest('label').hidden=input.disabled;
+  });
+  updateConceptSummary();
+}
+
+function applyPeriodoVisibility(){
+  const iniWrap = document.getElementById('fbMesIniWrap');
+  const finWrap = document.getElementById('fbMesFinWrap');
+  const lbl = document.getElementById('lblMesIni');
+  if(FILTERS.periodo==='anual'){
+    iniWrap.style.display='none'; finWrap.style.display='none';
+  } else if(FILTERS.periodo==='mensual'){
+    iniWrap.style.display='flex'; finWrap.style.display='none';
+    lbl.textContent='Mes';
+    document.getElementById('gfMesIni').value = FILTERS.mesIni;
+  } else {
+    iniWrap.style.display='flex'; finWrap.style.display='flex';
+    lbl.textContent='Mes inicial';
+    document.getElementById('gfMesIni').value = FILTERS.mesIni;
+    document.getElementById('gfMesFin').value = FILTERS.mesFin;
+  }
+}
+
+function monthsInRange(mesIni, mesFin){
+  const out=[]; for(let m=mesIni;m<=mesFin;m++) out.push(m); return out;
+}
+function periodBounds(){
+  return FILTERS.periodo==='anual'
+    ? {ini:1, fin:YEAR_CUTOFF.get(FILTERS.year)||0}
+    : {ini:FILTERS.mesIni, fin:FILTERS.mesFin};
+}
+function getRows(year, mesIni, mesFin, tipo, conceptos){
+  return DATA.filter(d=> d.ejercicio===year && d.mes_num>=mesIni && d.mes_num<=mesFin
+    && (!tipo || d.tipo===tipo) && (!conceptos?.length || conceptos.includes(d.concepto)));
+}
+function getFilteredRows(){
+  const {ini,fin}=periodBounds();
+  return getRows(FILTERS.year, ini, fin, FILTERS.tipo, FILTERS.conceptos);
+}
+function getPrevYearRows(){
+  const {ini,fin}=periodBounds();
+  return getRows(FILTERS.year-1, ini, fin, FILTERS.tipo, FILTERS.conceptos);
+}
+function sumField(rows, field){ return rows.reduce((sum,row)=>sum+(row[field] ?? 0),0); }
+function hasField(rows, field){ return rows.some(row=>row[field] !== null); }
+function contribuyentesDelPeriodo(year){
+  const {ini,fin}=periodBounds();
+  if(ini===fin){
+    const monthly=getRows(year,fin,fin,FILTERS.tipo,FILTERS.conceptos);
+    return hasField(monthly,'beneficiarios') ? sumField(monthly,'beneficiarios') : null;
+  }
+  const terminal=getRows(year,fin,fin,FILTERS.tipo,FILTERS.conceptos);
+  return hasField(terminal,'contribuyentes') ? sumField(terminal,'contribuyentes') : null;
+}
+function sumBy(rows, keyFn){
+  const m = new Map();
+  rows.filter(r=>r.monto!==null).forEach(r=>{ const k=keyFn(r); m.set(k,(m.get(k)||0)+r.monto); });
+  return m;
+}
+function periodoLabel(){
+  if(FILTERS.periodo==='anual'){
+    const fin=periodBounds().fin;
+    return fin===12 ? `Año completo ${FILTERS.year}` : fin>0 ? `Enero–${MES_NOMBRE_LARGO[fin]} ${FILTERS.year}` : `Sin periodo disponible para ${FILTERS.year}`;
+  }
+  if(FILTERS.periodo==='mensual') return `${MES_NOMBRE_LARGO[FILTERS.mesIni]} ${FILTERS.year}`;
+  return `${MES_NOMBRE_LARGO[FILTERS.mesIni]}–${MES_NOMBRE_LARGO[FILTERS.mesFin]} ${FILTERS.year}`;
+}
+function periodoLabelPrev(){
+  if(FILTERS.periodo==='anual'){
+    const fin=periodBounds().fin;
+    return fin===12 ? `Año completo ${FILTERS.year-1}` : fin>0 ? `Enero–${MES_NOMBRE_LARGO[fin]} ${FILTERS.year-1}` : `Sin periodo equivalente en ${FILTERS.year-1}`;
+  }
+  if(FILTERS.periodo==='mensual') return `${MES_NOMBRE_LARGO[FILTERS.mesIni]} ${FILTERS.year-1}`;
+  return `${MES_NOMBRE_LARGO[FILTERS.mesIni]}–${MES_NOMBRE_LARGO[FILTERS.mesFin]} ${FILTERS.year-1}`;
+}
+
+function refreshFilteredViews(){
+  const current=getFilteredRows();
+  const previous=getPrevYearRows();
+  if(resumenChart){ resumenChart.destroy(); resumenChart=null; }
+  renderAnalisis(current,previous);
+  renderResumen(current,previous);
+  renderDetalle(current);
+}
+
+// Cuando Tipo=Reducciones y coexisten "Predial" y "Predial (pago anticipado)", se agrupan en 1 solo renglón.
+function buildRankingConAgrupacionPredial(rows){
+  const byKey = sumBy(rows, r=>JSON.stringify([r.tipo,r.concepto]));
+  const total = [...byKey.values()].reduce((a,b)=>a+b,0);
+
+  const kPred = JSON.stringify(['Reducciones','Predial']);
+  const kPredAnt = JSON.stringify(['Reducciones','Predial (pago anticipado)']);
+  const merged = new Map(byKey);
+  let didMerge = false;
+  if(merged.has(kPred) && merged.has(kPredAnt)){
+    const suma = merged.get(kPred) + merged.get(kPredAnt);
+    merged.delete(kPred); merged.delete(kPredAnt);
+    merged.set(JSON.stringify(['Reducciones','Predial¹']), suma);
+    didMerge = true;
+  }
+  const ranked = [...merged.entries()].sort((a,b)=>b[1]-a[1]);
+  return {ranked, total, didMerge};
+}
+
+function renderResumen(rows,prevRows){
+  const acumulado = hasField(rows,'monto') ? sumField(rows,'monto') : null;
+  const acumuladoPrev = hasField(prevRows,'monto') ? sumField(prevRows,'monto') : null;
+  const contribuyentes = contribuyentesDelPeriodo(FILTERS.year);
+  const contribuyentesPrev = contribuyentesDelPeriodo(FILTERS.year-1);
+
+  // Avance = actual/anterior*100 (sin signo, es un porcentaje de avance, no una variación)
+  const avance = acumulado!==null && acumuladoPrev>0 ? (acumulado/acumuladoPrev*100) : null;
+  const varContrib = contribuyentes!==null && contribuyentesPrev>0 ? ((contribuyentes/contribuyentesPrev)-1)*100 : null;
+
+  const {ini,fin}=periodBounds();
+  const meses = monthsInRange(ini, fin);
+  const tiposPresentes = [...new Set(rows.filter(d=>d.monto!==null).map(d=>d.tipo))];
+  const monthlyByTipo = {};
+  tiposPresentes.forEach(t=> monthlyByTipo[t] = meses.map(()=>0));
+  rows.filter(d=>d.monto!==null).forEach(d=>{ const idx = meses.indexOf(d.mes_num); if(idx>=0) monthlyByTipo[d.tipo][idx]+=d.monto; });
+
+  const {ranked, total, didMerge} = buildRankingConAgrupacionPredial(rows);
+  const top2 = ranked.slice(0,2);
+
+  const el = document.getElementById('resumen-indicadores');
+  const panels = document.getElementById('summary-panels-slot');
+  el.innerHTML = `
+    <div class="section-heading"><h2 id="headingResumen">Resumen</h2></div>
+    <div class="kpis">
+      <div class="kpi"><div class="label">Gasto fiscal</div><div class="value">${acumulado!==null ? fmt(acumulado)+' mdp' : 'n/d'}</div><div class="delta">${periodoLabel()}</div></div>
+      <div class="kpi"><div class="label">Avance</div><div class="value">${avance!==null ? fmt(avance)+'%' : 'n/d'}</div><div class="delta">respecto a ${periodoLabelPrev()}</div></div>
+      <div class="kpi contribuyentes"><div class="label">${ini===fin ? 'Contribuyentes únicos del mes' : 'Contribuyentes únicos acumulados al periodo'}</div><div class="value">${contribuyentes!==null ? fmtInt(contribuyentes) : 'n/d'}</div><div class="delta">${ini===fin ? periodoLabel() : `Enero–${MES_NOMBRE_LARGO[fin]} ${FILTERS.year}`}</div></div>
+      <div class="kpi"><div class="label">Variación de contribuyentes únicos</div><div class="value">${varContrib!==null ? (varContrib>=0?'+':'')+fmt(varContrib)+'%' : 'n/d'}</div><div class="delta ${varContrib!==null?(varContrib>=0?'pos':'neg'):''}">vs. el mismo periodo de ${FILTERS.year-1}</div></div>
+    </div>
+  `;
+  panels.innerHTML = `
+    <div class="summary-panels">
+    <div class="card">
+      <h3>Evolución general</h3>
+      <div class="cap">Millones de pesos · ${periodoLabel()}</div>
+      ${acumulado!==null ? `<div class="${meses.length===1?'chart-donut':''}"><canvas id="chartResumen" height="130" role="img" aria-label="Evolución del gasto fiscal por tipo y mes"></canvas></div>` : '<p class="note">No hay montos capturados para esta selección.</p>'}
+    </div>
+    <div class="card">
+      <h3>Conceptos principales</h3>
+      <div class="cap">Conceptos más relevantes del periodo — ${periodoLabel()}</div>
+      <div class="table-scroll"><table><thead><tr><th>Tipo</th><th>Concepto</th><th style="text-align:right">Monto (mdp)</th><th>Participación</th></tr></thead>
+      <tbody>${top2.length ? top2.map(([k,v])=>{
+        const [tipo,con] = JSON.parse(k);
+        const pct = total>0 ? (v/total*100) : null;
+        const pctCell = pct!==null ? `<div class="barcell"><div class="fill" style="--pct:${pct}%;"></div><div class="txt">${pct.toFixed(1)}%</div></div>` : `<span class="napct">— no aplica</span>`;
+        const conLabel = con==='Predial¹' ? `Predial<sup class="ref">1</sup>` : escapeHtml(con);
+        return `<tr><td>${tagFor(tipo)}</td><td>${conLabel}</td><td style="text-align:right">${fmt(v)}</td><td>${pctCell}</td></tr>`;
+      }).join('') : `<tr><td colspan="4" style="text-align:center;color:var(--grisclaro)">Sin datos para este periodo y filtros.</td></tr>`}</tbody></table></div>
+      ${didMerge ? `<p class="footnote"><sup>1</sup> Considera Predial pago anticipado.</p>` : ''}
+    </div>
+    </div>
+  `;
+
+  if(acumulado===null) return;
+  if(meses.length>1 && tiposPresentes.length>0){
+    resumenChart = new Chart(document.getElementById('chartResumen'), {
+      type:'line',
+      data:{ labels: meses.map(m=>MES_NOMBRE[m]), datasets: tiposPresentes.map(t=>({
+        label:t, data: monthlyByTipo[t].map(v=>+v.toFixed(1)), borderColor: COLOR_TIPO[t]||'#999', backgroundColor:(COLOR_TIPO[t]||'#999')+'22',
+        tension:.25, fill:false, pointRadius:3
+      }))},
+      options:{ plugins:{legend:{position:'bottom', labels:{boxWidth:10,font:{size:11,family:'Roboto'}}}},
+        scales:{ y:{ ticks:{ callback:v=>v.toLocaleString('es-MX') } }, x:{ grid:{display:false} } } }
+    });
+  } else {
+    const totalPorTipo = {};
+    tiposPresentes.forEach(t=> totalPorTipo[t] = monthlyByTipo[t].reduce((a,b)=>a+b,0));
+    const centerTotal = {
+      id:'centerTotal',
+      afterDatasetsDraw(chart){
+        const arc=chart.getDatasetMeta(0).data[0];
+        if(!arc) return;
+        const visibleTotal=Object.values(totalPorTipo).reduce((sum,value,index)=>
+          sum+(chart.getDataVisibility(index)?value:0),0);
+        const {ctx}=chart;
+        ctx.save();
+        ctx.textAlign='center';
+        ctx.textBaseline='middle';
+        ctx.fillStyle='#55585A';
+        ctx.font='700 17px Roboto, Arial, sans-serif';
+        ctx.fillText(fmt(visibleTotal,1),arc.x,arc.y-9);
+        ctx.font='500 11px Roboto, Arial, sans-serif';
+        ctx.fillText('mdp',arc.x,arc.y+11);
+        ctx.restore();
+      }
+    };
+    resumenChart = new Chart(document.getElementById('chartResumen'), {
+      type:'doughnut',
+      data:{ labels:Object.keys(totalPorTipo), datasets:[{ data:Object.values(totalPorTipo), backgroundColor:Object.keys(totalPorTipo).map(t=>COLOR_TIPO[t]) }]},
+      options:{ cutout:'70%', plugins:{ legend:{position:'bottom', labels:{boxWidth:10,font:{size:11,family:'Roboto'}}} } },
+      plugins:[centerTotal]
+    });
+  }
+}
+
+function renderAnalisis(rows,prevRows){
+  paintEvolucionAnalisis(rows,prevRows);
+  paintDistribucion(rows);
+  paintTopsAnalisis(rows);
+}
+
+function paintEvolucionAnalisis(rows,prevRows){
+  const {ini,fin}=periodBounds();
+  const meses = monthsInRange(ini,fin);
+  const tipos = [...new Set([...rows, ...prevRows].map(d=>d.tipo))];
+
+  const monthlyCur = {}; tipos.forEach(t=> monthlyCur[t]=meses.map(()=>0));
+  rows.filter(d=>d.monto!==null).forEach(d=>{ const idx=meses.indexOf(d.mes_num); if(idx>=0) monthlyCur[d.tipo][idx]+=d.monto; });
+
+  const totalCurByMonth = meses.map((m,i)=>hasField(rows.filter(d=>d.mes_num===m),'monto') ? tipos.reduce((s,t)=>s+monthlyCur[t][i],0) : null);
+  const totalPrevByMonth = meses.map(m=>{ const monthRows=prevRows.filter(d=>d.mes_num===m); return hasField(monthRows,'monto') ? sumField(monthRows,'monto') : null; });
+
+  let accC=0, accP=0;
+  const acumCur = totalCurByMonth.map(v=>{if(v===null)return null; accC+=v; return +accC.toFixed(1);});
+  const acumPrev = totalPrevByMonth.map(v=>{if(v===null)return null; accP+=v; return +accP.toFixed(1);});
+
+  const totalCur = hasField(rows,'monto') ? sumField(rows,'monto') : null;
+  const totalPrev = hasField(prevRows,'monto') ? sumField(prevRows,'monto') : null;
+  const variacionTotal = totalCur!==null && totalPrev>0 ? (totalCur/totalPrev-1)*100 : null;
+  const variacionMostrada = variacionTotal!==null ? (Math.round(variacionTotal*10)/10 || 0) : null;
+
+  const target = document.getElementById('sub-evolucion');
+  ['evol','acum','vs'].forEach(key=>{if(analysisCharts[key]){analysisCharts[key].destroy();analysisCharts[key]=null;}});
+  target.innerHTML = `
+    <div class="section-heading"><h2 id="headingEvolucion">Evolución</h2></div>
+    ${meses.length>1 ? `<div class="card" style="margin-bottom:16px;">
+      <h3>Evolución mensual por tipo de beneficio</h3>
+      <div class="cap">Millones de pesos · ${periodoLabel()}</div>
+      <div class="chart-scroll"><div class="chart-scroll-inner"><canvas id="chartEvolLine" height="110" role="img" aria-label="Montos mensuales por tipo de beneficio y total de cada mes"></canvas></div></div>
+    </div>` : ''}
+    <div id="summary-panels-slot" style="margin-bottom:16px;"></div>
+    <div class="grid2">
+      <div class="card">
+        <h3>Acumulado progresivo</h3>
+        <div class="cap">Millones de pesos · ${periodoLabel()} vs. ${periodoLabelPrev()}, mismos meses</div>
+        <canvas id="chartAcumulado" height="150" role="img" aria-label="Acumulado progresivo actual y anterior en millones de pesos"></canvas>
+      </div>
+      <div class="card">
+        <h3>Total del periodo</h3>
+        <div class="cap">Millones de pesos · ${periodoLabel()} vs. ${periodoLabelPrev()}</div>
+        <canvas id="chartVsAnterior" height="150" role="img" aria-label="Comparación de totales de ambos periodos en millones de pesos"></canvas>
+        <div class="comparison-kpi" aria-label="Variación porcentual del monto entre ejercicios">
+          <span class="label">Variación ${FILTERS.year} vs. ${FILTERS.year-1}</span>
+          <strong class="value ${variacionMostrada!==null?(variacionMostrada>0?'pos':variacionMostrada<0?'neg':''):''}">${variacionMostrada!==null ? (variacionMostrada>0?'+':'')+fmt(variacionMostrada)+'%' : 'n/d'}</strong>
+        </div>
+        <p class="note">${totalPrev===null ? 'No hay datos del periodo equivalente en el año anterior para comparar.' : ''}</p>
+      </div>
+    </div>
+  `;
+
+  if(meses.length>1){
+    const totalLabels={
+      id:'monthlyTotals',
+      afterDatasetsDraw(chart){
+        const {ctx,scales:{x,y}}=chart;
+        ctx.save();
+        ctx.fillStyle='#55585A';
+        ctx.font='600 11px Roboto, Arial, sans-serif';
+        ctx.textAlign='center';
+        ctx.textBaseline='bottom';
+        totalCurByMonth.forEach((total,i)=>{
+          if(total===null) return;
+          const visibleTotal=chart.data.datasets.reduce((sum,dataset,index)=>
+            sum+(chart.isDatasetVisible(index)?(Number(dataset.data[i])||0):0),0);
+          ctx.fillText(fmt(visibleTotal,1),x.getPixelForValue(i),y.getPixelForValue(visibleTotal)-5);
+        });
+        ctx.restore();
+      }
+    };
+    analysisCharts.evol = new Chart(document.getElementById('chartEvolLine'), {
+      type:'bar',
+      data:{ labels: meses.map(m=>MES_NOMBRE[m]), datasets: tipos.map(t=>({label:t, data:monthlyCur[t].map((v,i)=>totalCurByMonth[i]===null?null:v), backgroundColor:COLOR_TIPO[t]||'#55585A'})) },
+      options:{ layout:{padding:{top:22}}, plugins:{legend:{position:'bottom',labels:{font:{family:'Roboto'}}}}, scales:{ x:{stacked:true, grid:{display:false}}, y:{stacked:true,suggestedMax:Math.max(0,...totalCurByMonth.filter(v=>v!==null))*1.14} } },
+      plugins:[totalLabels]
+    });
+  }
+
+  analysisCharts.acum = new Chart(document.getElementById('chartAcumulado'), {
+    type:'line',
+    data:{ labels: meses.map(m=>MES_NOMBRE[m]), datasets:[
+      { label:`${FILTERS.year}`, data:acumCur, borderColor:'#9D2148', backgroundColor:'#9D214822', fill:true, tension:.2 },
+      { label:`${FILTERS.year-1}`, data:acumPrev, borderColor:'#BFB7AF', backgroundColor:'#BFB7AF22', fill:true, tension:.2, borderDash:[5,3] }
+    ]},
+    options:{ plugins:{legend:{position:'bottom',labels:{font:{family:'Roboto'}}}}, scales:{x:{grid:{display:false}}} }
+  });
+
+  analysisCharts.vs = new Chart(document.getElementById('chartVsAnterior'), {
+    type:'bar',
+    data:{ labels:[`${FILTERS.year-1}`,`${FILTERS.year}`], datasets:[{ data:[totalPrev===null?null:+totalPrev.toFixed(1), totalCur===null?null:+totalCur.toFixed(1)], backgroundColor:['#BFB7AF','#9D2148'] }]},
+    options:{ indexAxis:'y', plugins:{legend:{display:false}} }
+  });
+}
+
+function paintDistribucion(rows){
+  const byTipo = sumBy(rows, r=>r.tipo);
+  const {amounts:byContribucion,unclassified}=agruparContribuciones(rows);
+  const categorias=CONTRIBUCION_CATEGORIES.filter(category=>byContribucion.has(category))
+    .sort((a,b)=>byContribucion.get(b)-byContribucion.get(a));
+  const contribucionNote='<p class="footnote">1/ Considera derechos del Registro Público de la Propiedad y de Comercio, por la expedición de constancias, por el uso de la vía pública y por la prestación de otros servicios.</p>';
+  const unclassifiedNote=unclassified.length ? `<p class="footnote">Conceptos fuera de las nueve categorías: ${unclassified.map(escapeHtml).join(', ')}.</p>` : '';
+
+  // Con un solo tipo de beneficio, la gráfica por tipo es redundante.
+  const ocultarPorTipo = !!FILTERS.tipo;
+
+  const target = document.getElementById('sub-distribucion');
+  ['tipo','concepto'].forEach(key=>{if(analysisCharts[key]){analysisCharts[key].destroy();analysisCharts[key]=null;}});
+  target.innerHTML = `<div class="section-heading"><h2 id="headingDistribucion">Distribución</h2></div>` + (ocultarPorTipo
+    ? `<div class="card"><h3>Por tipo de contribución</h3><div class="cap">Millones de pesos · ${periodoLabel()} · Tipo: ${escapeHtml(FILTERS.tipo)}</div><canvas id="chartDistConcepto" height="110" role="img" aria-label="Montos por tipo de contribución"></canvas>${contribucionNote}${unclassifiedNote}</div>`
+    : `<div class="grid2">
+        <div class="card"><h3>Por tipo de beneficio</h3><div class="cap">Millones de pesos · ${periodoLabel()}</div><canvas id="chartDistTipo" height="160" role="img" aria-label="Montos por tipo de beneficio"></canvas></div>
+        <div class="card"><h3>Por tipo de contribución</h3><div class="cap">Millones de pesos · ${periodoLabel()}</div><canvas id="chartDistConcepto" height="160" role="img" aria-label="Montos por tipo de contribución"></canvas>${contribucionNote}${unclassifiedNote}</div>
+      </div>`);
+
+  if(byTipo.size===0){
+    target.innerHTML = `<div class="section-heading"><h2 id="headingDistribucion">Distribución</h2></div><div class="card"><p class="note">No hay montos capturados para el periodo y filtros seleccionados.</p></div>`;
+    return;
+  }
+  if(!ocultarPorTipo){
+    const tipoValues=[...byTipo.values()];
+    const tipoTotals={
+      id:'tipoTotals',
+      afterDatasetsDraw(chart){
+        const {ctx}=chart;
+        ctx.save();
+        ctx.fillStyle='#55585A';
+        ctx.font='600 11px Roboto, Arial, sans-serif';
+        ctx.textAlign='center';
+        ctx.textBaseline='bottom';
+        chart.getDatasetMeta(0).data.forEach((bar,i)=>ctx.fillText(fmt(tipoValues[i],1),bar.x,bar.y-6));
+        ctx.restore();
+      }
+    };
+    analysisCharts.tipo = new Chart(document.getElementById('chartDistTipo'), {
+      type:'bar',
+      data:{ labels:[...byTipo.keys()], datasets:[{ data:tipoValues.map(v=>+v.toFixed(1)), backgroundColor:[...byTipo.keys()].map(t=>COLOR_TIPO[t]||'#55585A') }]},
+      options:{ layout:{padding:{top:22}}, plugins:{legend:{display:false}}, scales:{y:{suggestedMax:Math.max(0,...tipoValues)*1.14}} },
+      plugins:[tipoTotals]
+    });
+  }
+  if(categorias.length){
+    const contribucionValues=categorias.map(category=>byContribucion.get(category));
+    const contribucionTotals={
+      id:'contribucionTotals',
+      afterDatasetsDraw(chart){
+        const {ctx}=chart;
+        ctx.save();
+        ctx.fillStyle='#55585A';
+        ctx.font='600 11px Roboto, Arial, sans-serif';
+        ctx.textAlign='left';
+        ctx.textBaseline='middle';
+        chart.getDatasetMeta(0).data.forEach((bar,i)=>ctx.fillText(fmt(contribucionValues[i],1),bar.x+7,bar.y));
+        ctx.restore();
+      }
+    };
+    analysisCharts.concepto = new Chart(document.getElementById('chartDistConcepto'), {
+      type:'bar',
+      data:{ labels:categorias.map(category=>category==='Resto de derechos'?'Resto de derechos¹':category), datasets:[{ data:contribucionValues.map(v=>+v.toFixed(1)), backgroundColor:'#3D6C87' }]},
+      options:{ indexAxis:'y', layout:{padding:{right:54}}, plugins:{legend:{display:false}}, scales:{x:{suggestedMax:Math.max(0,...contribucionValues)*1.2}} },
+      plugins:[contribucionTotals]
+    });
+  } else {
+    document.getElementById('chartDistConcepto').replaceWith(Object.assign(document.createElement('p'),{className:'note',textContent:'No hay montos clasificados en estas nueve categorías para la selección.'}));
+  }
+}
+
+function paintTopsAnalisis(rows){
+  const total = sumField(rows,'monto');
+  const byKey = sumBy(rows, r=>JSON.stringify([r.tipo,r.concepto]));
+  const top10 = [...byKey.entries()].sort((a,b)=>b[1]-a[1]).slice(0,10);
+
+  const target = document.getElementById('sub-tops');
+  target.innerHTML = `
+    <div class="section-heading"><h2 id="headingTops">Tops</h2></div>
+    <div class="card">
+      <h3>Top 10 conceptos por monto</h3>
+      <div class="cap">${periodoLabel()}</div>
+      <div class="table-scroll"><table><thead><tr><th>#</th><th>Tipo</th><th>Concepto</th><th style="text-align:right">Monto (mdp)</th><th>Participación</th></tr></thead>
+      <tbody>${top10.length ? top10.map(([k,v],i)=>{
+        const [tipo,con] = JSON.parse(k);
+        const pct = total>0 ? (v/total*100) : null;
+        const pctCell = pct!==null ? `<div class="barcell"><div class="fill" style="--pct:${pct}%;"></div><div class="txt">${pct.toFixed(1)}%</div></div>` : `<span class="napct">— no aplica</span>`;
+        return `<tr><td>${i+1}</td><td>${tagFor(tipo)}</td><td>${escapeHtml(con)}</td><td style="text-align:right">${fmt(v)}</td><td>${pctCell}</td></tr>`;
+      }).join('') : `<tr><td colspan="5" style="text-align:center;color:var(--grisclaro)">Sin datos para este periodo y filtros.</td></tr>`}</tbody></table></div>
+    </div>
+  `;
+}
+
+function renderDetalle(rows){
+  const el = document.getElementById('v-detalle');
+  const {ini,fin}=periodBounds();
+  el.innerHTML = `
+    <div class="section-heading"><h2>Detalle de registros</h2><p>${periodoLabel()}</p></div>
+    <div class="card">
+      <div class="table-scroll"><table><caption class="sr-only">Registros de gasto fiscal filtrados</caption><thead><tr><th>Ejercicio</th><th>Mes</th><th>Tipo</th><th>Concepto</th><th style="text-align:right">Beneficiarios únicos del mes</th><th style="text-align:right">${ini===fin?'Contribuyentes únicos del mes':'Contribuyentes únicos acumulados al periodo'}</th><th style="text-align:right">Monto (mdp)</th></tr></thead>
+      <tbody id="tbDetalle"></tbody></table></div>
+      ${ini!==fin ? `<p class="footnote">El acumulado de contribuyentes corresponde a enero–${MES_NOMBRE_LARGO[fin]} y se muestra solo en las filas del mes final.</p>` : ''}
+      <div class="pagination">
+        <span id="detailCount" role="status" aria-live="polite"></span>
+        <div class="controls"><button id="prevPage" type="button">Anterior</button><span id="pageLabel"></span><button id="nextPage" type="button">Siguiente</button></div>
+      </div>
+    </div>
+  `;
+  const f = id=>document.getElementById(id);
+  let page=1;
+  function paint(){
+    const pageCount=Math.max(1,Math.ceil(rows.length/PAGE_SIZE));
+    page=Math.min(page,pageCount);
+    const visible=rows.slice((page-1)*PAGE_SIZE,page*PAGE_SIZE);
+    f('tbDetalle').innerHTML = visible.map(d=>
+      `<tr><td>${d.ejercicio}</td><td>${MES_NOMBRE[d.mes_num]}</td><td>${tagFor(d.tipo)}</td><td>${escapeHtml(d.concepto)}${d.tipo==='Subsidios' && d.concepto==='Predial' && d.rango ? ' '+escapeHtml(d.rango) : ''}${d.articulo?` <span class="detail-muted">(art. ${escapeHtml(d.articulo)})</span>`:''}</td>
+       <td style="text-align:right">${d.beneficiarios===null?'n/d':fmtInt(d.beneficiarios)}</td><td style="text-align:right">${ini===fin ? (d.beneficiarios===null?'n/d':fmtInt(d.beneficiarios)) : (d.mes_num===fin ? (d.contribuyentes===null?'n/d':fmtInt(d.contribuyentes)) : '—')}</td><td style="text-align:right">${d.monto===null?'n/d':fmt(d.monto,1)}</td></tr>`
+    ).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--grisclaro)">Sin resultados para este filtro.</td></tr>';
+    f('detailCount').textContent=rows.length ? `Mostrando ${fmtInt((page-1)*PAGE_SIZE+1)}–${fmtInt(Math.min(page*PAGE_SIZE,rows.length))} de ${fmtInt(rows.length)} registros` : '0 registros';
+    f('pageLabel').textContent=`Página ${page} de ${pageCount}`;
+    f('prevPage').disabled=page<=1;
+    f('nextPage').disabled=page>=pageCount;
+  }
+  f('prevPage').addEventListener('click', ()=>{page--;paint();});
+  f('nextPage').addEventListener('click', ()=>{page++;paint();});
+  paint();
+}
+</script>
+</body>
+</html>
