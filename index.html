@@ -179,15 +179,16 @@
   .kpis{grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:18px;}
   .kpi{position:relative;min-height:146px;padding:21px 22px;border:1px solid var(--border);border-radius:18px;background:#fff;box-shadow:var(--shadow);overflow:hidden;transition:transform .25s ease,box-shadow .25s ease;}
   .kpi:hover,.card:hover{transform:translateY(-2px);box-shadow:0 18px 40px rgba(64,47,46,.085);}
-  .kpi:first-child{grid-column:auto;}
-  .kpi:first-child{background:linear-gradient(125deg,#7A1938 0%,#9D2148 74%,#AE3D60 100%);border-color:transparent;box-shadow:0 16px 34px rgba(122,25,56,.18);}
-  .kpi:first-child::after{content:"";position:absolute;right:-65px;top:-105px;width:245px;height:245px;border:1px solid rgba(255,255,255,.16);border-radius:50%;box-shadow:0 0 0 45px rgba(255,255,255,.035),0 0 0 100px rgba(255,255,255,.025);pointer-events:none;}
-  .kpi.contribuyentes{background:linear-gradient(135deg,#FFFDF8,#F6EBDC);border-color:#EAD9BC;}
+  .kpis:not(:has(> :nth-child(3))){grid-template-columns:repeat(2,minmax(0,1fr));}
+  @media(min-width:1121px){.kpis:has(> :nth-child(3):last-child){grid-template-columns:repeat(3,minmax(0,1fr));}}
+  .kpi:nth-child(odd){background:linear-gradient(125deg,#7A1938 0%,#9D2148 74%,#AE3D60 100%);border-color:transparent;box-shadow:0 16px 34px rgba(122,25,56,.18);}
+  .kpi:nth-child(odd)::after{content:"";position:absolute;right:-65px;top:-105px;width:245px;height:245px;border:1px solid rgba(255,255,255,.16);border-radius:50%;box-shadow:0 0 0 45px rgba(255,255,255,.035),0 0 0 100px rgba(255,255,255,.025);pointer-events:none;}
+  .kpi:nth-child(even){background:linear-gradient(135deg,#FFFDF8,#F6EBDC);border-color:#EAD9BC;}
   .kpi .label{z-index:1;margin-bottom:10px;color:#6C6967;font-size:.68rem;font-weight:700;letter-spacing:.075em;}
   .kpi .value{z-index:1;color:var(--ink);font-size:clamp(1.38rem,2.25vw,2.05rem);line-height:1.12;letter-spacing:-.035em;font-variant-numeric:tabular-nums;}
   .kpi .delta{z-index:1;margin-top:9px;color:#6C6967;font-size:.76rem;}
-  .kpi:first-child .label,.kpi:first-child .value,.kpi:first-child .delta{color:#fff;}
-  .kpi.contribuyentes .value{color:var(--guinda-dark);}
+  .kpi:nth-child(odd) .label,.kpi:nth-child(odd) .value,.kpi:nth-child(odd) .delta{color:#fff;}
+  .kpi:nth-child(even) .value{color:var(--guinda-dark);}
   .summary-panels{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,.8fr);gap:16px;align-items:stretch;}
   .summary-panels>.card{min-width:0;}
   .card{min-width:0;padding:22px 24px;border:1px solid var(--border);border-radius:18px;background:#fff;box-shadow:var(--shadow);transition:transform .25s ease,box-shadow .25s ease;}
@@ -217,7 +218,7 @@
   @media(max-width:1120px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr));}.summary-panels{grid-template-columns:1fr;}}
   @media(max-width:850px){.grid2,.grid3{grid-template-columns:1fr;}nav{justify-content:flex-start;}}
   @media(max-width:680px){header{min-height:0;padding:22px 18px;gap:18px;}header h1{font-size:1.42rem;}header .logo{width:244px;}nav{padding:12px 16px 0;}main{padding:18px 16px 54px;}.filterbar{padding:16px;gap:12px;}.fb-group{flex:1 1 138px;min-width:0;}.kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:11px;}.kpi{min-height:128px;padding:16px 13px;}.kpi .value{font-size:1.45rem;}.card{padding:18px 16px;}.summary-panels .table-scroll table{min-width:440px;}.section-index{overflow-x:auto;flex-wrap:nowrap;padding-bottom:5px;}.section-index a{white-space:nowrap;}.multi-options{left:auto;right:0;}}
-  @media(max-width:390px){.kpis{grid-template-columns:1fr;}.kpi{min-height:116px;}}
+  @media(max-width:390px){.kpis,.kpis:not(:has(> :nth-child(3))){grid-template-columns:1fr;}.kpi{min-height:116px;}}
   @media(max-width:390px){.comparison-kpi{display:flex;width:100%;}}
   @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto;}.view.active{animation:none;}.kpi,.card,nav button{transition:none;}.kpi:hover,.card:hover,nav button:hover{transform:none;}}
 </style>
@@ -679,9 +680,9 @@ function renderResumen(rows,prevRows){
     <div class="section-heading"><h2 id="headingResumen">Resumen</h2></div>
     <div class="kpis">
       <div class="kpi"><div class="label">Gasto fiscal</div><div class="value">${acumulado!==null ? fmt(acumulado)+' mdp' : 'n/d'}</div><div class="delta">${periodoLabel()}</div></div>
-      <div class="kpi"><div class="label">Avance</div><div class="value">${avance!==null ? fmt(avance)+'%' : 'n/d'}</div><div class="delta">respecto a ${periodoLabelPrev()}</div></div>
-      <div class="kpi contribuyentes"><div class="label">${ini===fin ? 'Contribuyentes únicos del mes' : 'Contribuyentes únicos acumulados al periodo'}</div><div class="value">${contribuyentes!==null ? fmtInt(contribuyentes) : 'n/d'}</div><div class="delta">${ini===fin ? periodoLabel() : `Enero–${MES_NOMBRE_LARGO[fin]} ${FILTERS.year}`}</div></div>
-      <div class="kpi"><div class="label">Variación de contribuyentes únicos</div><div class="value">${varContrib!==null ? (varContrib>=0?'+':'')+fmt(varContrib)+'%' : 'n/d'}</div><div class="delta ${varContrib!==null?(varContrib>=0?'pos':'neg'):''}">vs. el mismo periodo de ${FILTERS.year-1}</div></div>
+      ${avance!==null ? `<div class="kpi"><div class="label">Avance</div><div class="value">${fmt(avance)}%</div><div class="delta">respecto a ${periodoLabelPrev()}</div></div>` : ''}
+      <div class="kpi"><div class="label">${ini===fin ? 'Contribuyentes únicos del mes' : 'Contribuyentes únicos acumulados al periodo'}</div><div class="value">${contribuyentes!==null ? fmtInt(contribuyentes) : 'n/d'}</div><div class="delta">${ini===fin ? periodoLabel() : `Enero–${MES_NOMBRE_LARGO[fin]} ${FILTERS.year}`}</div></div>
+      ${varContrib!==null ? `<div class="kpi"><div class="label">Variación de contribuyentes únicos</div><div class="value">${varContrib>=0?'+':''}${fmt(varContrib)}%</div><div class="delta ${varContrib>=0?'pos':'neg'}">vs. el mismo periodo de ${FILTERS.year-1}</div></div>` : ''}
     </div>
   `;
   panels.innerHTML = `
@@ -758,7 +759,7 @@ function renderAnalisis(rows,prevRows){
 function paintEvolucionAnalisis(rows,prevRows){
   const {ini,fin}=periodBounds();
   const meses = monthsInRange(ini,fin);
-  const tipos = [...new Set([...rows, ...prevRows].map(d=>d.tipo))];
+  const tipos = [...new Set(rows.map(d=>d.tipo))];
 
   const monthlyCur = {}; tipos.forEach(t=> monthlyCur[t]=meses.map(()=>0));
   rows.filter(d=>d.monto!==null).forEach(d=>{ const idx=meses.indexOf(d.mes_num); if(idx>=0) monthlyCur[d.tipo][idx]+=d.monto; });
@@ -772,9 +773,11 @@ function paintEvolucionAnalisis(rows,prevRows){
 
   const totalCur = hasField(rows,'monto') ? sumField(rows,'monto') : null;
   const totalPrev = hasField(prevRows,'monto') ? sumField(prevRows,'monto') : null;
-  const variacionTotal = totalCur!==null && totalPrev>0 ? (totalCur/totalPrev-1)*100 : null;
+  const hayComparacion = totalCur!==null && totalPrev!==null;
+  const variacionTotal = hayComparacion && totalPrev>0 ? (totalCur/totalPrev-1)*100 : null;
   const variacionMostrada = variacionTotal!==null ? (Math.round(variacionTotal*10)/10 || 0) : null;
 
+  const periodoGrafico = hayComparacion ? `${periodoLabel()} vs. ${periodoLabelPrev()}` : periodoLabel();
   const target = document.getElementById('sub-evolucion');
   ['evol','acum','vs'].forEach(key=>{if(analysisCharts[key]){analysisCharts[key].destroy();analysisCharts[key]=null;}});
   target.innerHTML = `
@@ -788,18 +791,17 @@ function paintEvolucionAnalisis(rows,prevRows){
     <div class="grid2">
       <div class="card">
         <h3>Acumulado progresivo</h3>
-        <div class="cap">Millones de pesos · ${periodoLabel()} vs. ${periodoLabelPrev()}, mismos meses</div>
-        <canvas id="chartAcumulado" height="150" role="img" aria-label="Acumulado progresivo actual y anterior en millones de pesos"></canvas>
+        <div class="cap">Millones de pesos · ${periodoGrafico}${hayComparacion ? ', mismos meses' : ''}</div>
+        <canvas id="chartAcumulado" height="150" role="img" aria-label="Acumulado progresivo en millones de pesos"></canvas>
       </div>
       <div class="card">
         <h3>Total del periodo</h3>
-        <div class="cap">Millones de pesos · ${periodoLabel()} vs. ${periodoLabelPrev()}</div>
-        <canvas id="chartVsAnterior" height="150" role="img" aria-label="Comparación de totales de ambos periodos en millones de pesos"></canvas>
-        <div class="comparison-kpi" aria-label="Variación porcentual del monto entre ejercicios">
+        <div class="cap">Millones de pesos · ${periodoGrafico}</div>
+        <canvas id="chartVsAnterior" height="150" role="img" aria-label="Total del periodo en millones de pesos"></canvas>
+        ${variacionMostrada!==null ? `<div class="comparison-kpi" aria-label="Variación porcentual del monto entre ejercicios">
           <span class="label">Variación ${FILTERS.year} vs. ${FILTERS.year-1}</span>
-          <strong class="value ${variacionMostrada!==null?(variacionMostrada>0?'pos':variacionMostrada<0?'neg':''):''}">${variacionMostrada!==null ? (variacionMostrada>0?'+':'')+fmt(variacionMostrada)+'%' : 'n/d'}</strong>
-        </div>
-        <p class="note">${totalPrev===null ? 'No hay datos del periodo equivalente en el año anterior para comparar.' : ''}</p>
+          <strong class="value ${variacionMostrada>0?'pos':variacionMostrada<0?'neg':''}">${variacionMostrada>0?'+':''}${fmt(variacionMostrada)}%</strong>
+        </div>` : ''}
       </div>
     </div>
   `;
@@ -835,14 +837,20 @@ function paintEvolucionAnalisis(rows,prevRows){
     type:'line',
     data:{ labels: meses.map(m=>MES_NOMBRE[m]), datasets:[
       { label:`${FILTERS.year}`, data:acumCur, borderColor:'#9D2148', backgroundColor:'#9D214822', fill:true, tension:.2 },
-      { label:`${FILTERS.year-1}`, data:acumPrev, borderColor:'#BFB7AF', backgroundColor:'#BFB7AF22', fill:true, tension:.2, borderDash:[5,3] }
+      ...(hayComparacion ? [{ label:`${FILTERS.year-1}`, data:acumPrev, borderColor:'#BFB7AF', backgroundColor:'#BFB7AF22', fill:true, tension:.2, borderDash:[5,3] }] : [])
     ]},
     options:{ plugins:{legend:{position:'bottom',labels:{font:{family:'Roboto'}}}}, scales:{x:{grid:{display:false}}} }
   });
 
   analysisCharts.vs = new Chart(document.getElementById('chartVsAnterior'), {
     type:'bar',
-    data:{ labels:[`${FILTERS.year-1}`,`${FILTERS.year}`], datasets:[{ data:[totalPrev===null?null:+totalPrev.toFixed(1), totalCur===null?null:+totalCur.toFixed(1)], backgroundColor:['#BFB7AF','#9D2148'] }]},
+    data:{
+      labels:hayComparacion ? [`${FILTERS.year-1}`, `${FILTERS.year}`] : [`${FILTERS.year}`],
+      datasets:[{
+        data:hayComparacion ? [+totalPrev.toFixed(1), +totalCur.toFixed(1)] : [totalCur===null ? null : +totalCur.toFixed(1)],
+        backgroundColor:hayComparacion ? ['#BFB7AF','#9D2148'] : '#9D2148'
+      }]
+    },
     options:{ indexAxis:'y', plugins:{legend:{display:false}} }
   });
 }
@@ -964,7 +972,7 @@ function renderDetalle(rows){
     const visible=rows.slice((page-1)*PAGE_SIZE,page*PAGE_SIZE);
     f('tbDetalle').innerHTML = visible.map(d=>
       `<tr><td>${d.ejercicio}</td><td>${MES_NOMBRE[d.mes_num]}</td><td>${tagFor(d.tipo)}</td><td>${escapeHtml(d.concepto)}${d.tipo==='Subsidios' && d.concepto==='Predial' && d.rango ? ' '+escapeHtml(d.rango) : ''}${d.articulo?` <span class="detail-muted">(art. ${escapeHtml(d.articulo)})</span>`:''}</td>
-       <td style="text-align:right">${d.beneficiarios===null?'n/d':fmtInt(d.beneficiarios)}</td><td style="text-align:right">${ini===fin ? (d.beneficiarios===null?'n/d':fmtInt(d.beneficiarios)) : (d.mes_num===fin ? (d.contribuyentes===null?'n/d':fmtInt(d.contribuyentes)) : '—')}</td><td style="text-align:right">${d.monto===null?'n/d':fmt(d.monto,1)}</td></tr>`
+       <td style="text-align:right">${d.beneficiarios===null?'n/d':fmtInt(d.beneficiarios)}</td><td style="text-align:right">${ini===fin ? (d.beneficiarios===null?'n/d':fmtInt(d.beneficiarios)) : (d.mes_num===fin ? (d.contribuyentes===null?'n/d':fmtInt(d.contribuyentes)) : '')}</td><td style="text-align:right">${d.monto===null?'n/d':fmt(d.monto,1)}</td></tr>`
     ).join('') || '<tr><td colspan="7" style="text-align:center;color:var(--grisclaro)">Sin resultados para este filtro.</td></tr>';
     f('detailCount').textContent=rows.length ? `Mostrando ${fmtInt((page-1)*PAGE_SIZE+1)}–${fmtInt(Math.min(page*PAGE_SIZE,rows.length))} de ${fmtInt(rows.length)} registros` : '0 registros';
     f('pageLabel').textContent=`Página ${page} de ${pageCount}`;
